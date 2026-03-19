@@ -23,7 +23,7 @@ class VXC_Controller:
 
             time.sleep(2)
 
-            print(f"[SYSTEM] Connection established to {self.port}\n")
+            print(f"[SYSTEM] Connection established to {self.port} for VXC Motors.")
             if self.connection and self.connection.is_open:
                 if self.echo == 1:
                     message = "E,"
@@ -32,7 +32,6 @@ class VXC_Controller:
                 else:
                     message = "F,"
                     self.connection.write(f"{message}".encode('utf-8'))
-                    print(f"[CONFIG] Echo: OFF")
 
             else:
                 print(f"[ERROR] Could not connect to motors\n")
@@ -76,4 +75,4 @@ class VXC_Controller:
     def disconnect(self):
         message = "Q,"
         self.connection.write(f"{message}".encode('utf-8'))
-        print(f"["+self.port+"] Sent: {message}")
+        print(f"[SYSTEM] "+self.port+" - VXC Motors disconnected.")

@@ -1,12 +1,16 @@
-from vxc_driver import VXC_Controller
+from neo_driver import NEO_Controller
 import time
 
 if __name__ == "__main__":
-    Motors = VXC_Controller(port='COM3', baudrate=57600, timeout=1)
-    Motors.connect()
-    
-    Motors.move_motor(1, 1500)
-    Motors.move_motor(2, 1500)
-    Motors.move_motor(3, 1500)
 
-    Motors.disconnect()
+    """
+    COM3 = VXC Motors
+    COM4 = Readout XY
+    COM5 = Readout Phi
+    """ 
+    NEO = NEO_Controller('COM3', 'COM4', 'COM5', baudrate=115200, timeout=1, echo=1)
+    NEO.connect()
+
+    time.sleep(5)
+
+    NEO.disconnect()
