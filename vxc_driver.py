@@ -2,6 +2,8 @@ import serial
 import time
 
 class VXC_Controller:
+
+
     def __init__(self, port, baudrate=57600, timeout=1, echo=1):
         self.number_of_motors = 3
         self.port = port
@@ -9,6 +11,7 @@ class VXC_Controller:
         self.timeout = timeout
         self.echo = echo
         self.connection = None
+
 
     def connect(self):
         try:
@@ -32,12 +35,16 @@ class VXC_Controller:
                 else:
                     message = "F,"
                     self.connection.write(f"{message}".encode('utf-8'))
-
+                return True
             else:
                 print(f"[ERROR] Could not connect to motors\n")
+                return False
+
 
         except Exception as e:
             print(f"[ERROR] Could not connect: {e}\n")
+            return False
+
 
     def move_motor(self, motor_number, steps):
         if self.connection and self.connection.is_open:
@@ -47,11 +54,25 @@ class VXC_Controller:
                 message = "C I" + str(motor_number) + "M" + str(steps) + ", R"
                 self.connection.write(f"{message}".encode('utf-8'))
                 print(f"["+self.port+"] Sent: {message}")
-                self.wait_for_completion()
+                return self.wait_for_completion()
             else:
                 print(f"[ERROR] Motor not found [1,2,3] for [Horizontal, Vertical, Rotary]\n")
         else:
             print(f"[ERROR] Could not connect to motors\n")
+
+
+    def home(self):
+        if self.connection and self.connection.is_open:
+            for motor_number in range(1,4):
+                # Adding \n because terminals usually wait for a newline to display
+                #IAmM0
+                message = "C IA" + str(motor_number) + "M0, R"
+                self.connection.write(f"{message}".encode('utf-8'))
+                print(f"["+self.port+"] Sent: {message}")
+                return self.wait_for_completion()
+        else:
+            print(f"[ERROR] Could not connect to motors\n")
+
 
     def wait_for_completion(self, timeout=10):
         """Blocks until the '^' character is received or timeout occurs."""
@@ -71,6 +92,7 @@ class VXC_Controller:
             
         print("[ERROR] Movement timed out!")
         return False
+
 
     def disconnect(self):
         message = "Q,"
