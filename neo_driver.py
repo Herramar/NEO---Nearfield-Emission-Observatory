@@ -6,11 +6,12 @@ from vro_driver import VRO_Controller
 class NEO_Controller:
 
 
-    def __init__(self, port_Motors, port_Readout_XY, port_Readout_Phi, baudrate=115200, timeout=1, echo=1):
+    def __init__(self, port_Motors, port_Readout_XY, port_Readout_Phi, baudrateVRO=9600, baudrateVXC=57600, timeout=1, echo=1):
         self.port_Motors = port_Motors
         self.port_Readout_XY = port_Readout_XY
         self.port_Readout_Phi = port_Readout_Phi
-        self.baudrate = baudrate
+        self.baudrateVRO = baudrateVRO
+        self.baudrateVXC = baudrateVXC
         self.timeout = timeout
         self.echo = echo
         self.connection = None
@@ -20,13 +21,13 @@ class NEO_Controller:
         print("\n[SYSTEM] Connecting...\n")
 
         # COM3 - VXC Motors
-        self.Motors = VXC_Controller(port=self.port_Motors, baudrate = self.baudrate, timeout= self.timeout, echo=self.echo) 
+        self.Motors = VXC_Controller(port=self.port_Motors, baudrate = self.baudrateVXC, timeout= self.timeout, echo=self.echo) 
         
         # COM4 - Readout XY 
-        self.Readout_XY = VRO_Controller(port=self.port_Readout_XY, baudrate = self.baudrate, timeout= self.timeout, echo=self.echo, type = 0) # COM4
+        self.Readout_XY = VRO_Controller(port=self.port_Readout_XY, baudrate = self.baudrateVRO, timeout= self.timeout, echo=self.echo, type = 0) # COM4
         
         # COM5 - Readout Phi
-        self.Readout_Phi = VRO_Controller(port=self.port_Readout_Phi, baudrate = self.baudrate, timeout= self.timeout, echo=self.echo, type = 1) # COM5
+        self.Readout_Phi = VRO_Controller(port=self.port_Readout_Phi, baudrate = self.baudrateVRO, timeout= self.timeout, echo=self.echo, type = 1) # COM5
         
         self.connection = self.Motors.connect() and self.Readout_XY.connect() and self.Readout_Phi.connect()
         print("\n")

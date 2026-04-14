@@ -4,7 +4,7 @@ import time
 class VRO_Controller:
 
 
-    def __init__(self, port, baudrate=115200, timeout=1, echo=1, type = 0):
+    def __init__(self, port, baudrate=9600, timeout=1, echo=1, type = 0):
         self.port = port
         self.baudrate = baudrate
         self.timeout = timeout
