@@ -4,9 +4,10 @@ import time
 class VXC_Controller:
 
 
-    def __init__(self, port, baudrate=57600, timeout=1, echo=1):
+    def __init__(self, port, motorSpeed=500, baudrate=57600, timeout=1, echo=1):
         self.number_of_motors = 3
         self.port = port
+        self.motorSpeed = motorSpeed
         self.baudrate = baudrate
         self.timeout = timeout
         self.echo = echo
@@ -35,6 +36,9 @@ class VXC_Controller:
                 else:
                     message = "F,"
                     self.connection.write(f"{message}".encode('utf-8'))
+
+                message = "S1M" + str(self.motorSpeed) + ", S2M" + str(self.motorSpeed) + ", S3M" + str(self.motorSpeed) + ", R"
+                self.connection.write(f"{message}".encode('utf-8'))
                 return True
             else:
                 print(f"[ERROR] Could not connect to motors\n")
@@ -44,17 +48,25 @@ class VXC_Controller:
         except Exception as e:
             print(f"[ERROR] Could not connect: {e}\n")
             return False
-
+        
 
     def move_motor(self, motor_number, steps):
         if self.connection and self.connection.is_open:
             motor_number = int(motor_number)
             if motor_number > 0 and motor_number <4:
+                # Clear buffer before sending to ensure clean state
+                self.connection.reset_input_buffer()
+                self.connection.reset_output_buffer()
+                
                 # Adding \n because terminals usually wait for a newline to display
                 message = "C I" + str(motor_number) + "M" + str(steps) + ", R"
                 self.connection.write(f"{message}".encode('utf-8'))
-                print(f"["+self.port+"] Sent: {message}")
-                return self.wait_for_completion()
+                print(f"[{self.port}] Sent: {message}")
+                if self.wait_for_completion():
+                    time.sleep(0.2)  # Additional delay to ensure movement is fully settled
+                    return True
+                else:
+                    return False
             else:
                 print(f"[ERROR] Motor not found [1,2,3] for [Horizontal, Vertical, Rotary]\n")
         else:
@@ -66,15 +78,21 @@ class VXC_Controller:
             for motor_number in range(1,4):
                 # Adding \n because terminals usually wait for a newline to display
                 #IAmM0
-                message = "C IA" + str(motor_number) + "M0, R"
+                message = "C IA" + str(int(motor_number)) + "M0, R"
+                self.connection.reset_input_buffer()
                 self.connection.write(f"{message}".encode('utf-8'))
-                print(f"["+self.port+"] Sent: {message}")
-                return self.wait_for_completion()
+                print(f"[{self.port}] Sent: {message}")
+                if not self.wait_for_completion():
+                    print(f"[ERROR] Failed to home motor {motor_number}\n")
+                    return False
+                time.sleep(0.2) # Small delay between homing each motor
+            return True
         else:
             print(f"[ERROR] Could not connect to motors\n")
+            return False
 
 
-    def wait_for_completion(self, timeout=10):
+    def wait_for_completion(self, timeout=30):
         """Blocks until the '^' character is received or timeout occurs."""
         start_time = time.time()
         buffer = ""
@@ -86,7 +104,7 @@ class VXC_Controller:
                 # Read one byte at a time to catch the '^' immediately
                 char = self.connection.read(1).decode('utf-8')
                 if char == '^':
-                    print("[SYSTEM] Movement complete (^ received)")
+                    print(f"[{self.port}] Movement complete (^ received)")
                     return True
             time.sleep(0.01) # Tiny sleep to prevent 100% CPU usage
             

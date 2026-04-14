@@ -6,10 +6,11 @@ from vro_driver import VRO_Controller
 class NEO_Controller:
 
 
-    def __init__(self, port_Motors, port_Readout_XY, port_Readout_Phi, baudrateVRO=9600, baudrateVXC=57600, timeout=1, echo=1):
+    def __init__(self, port_Motors, port_Readout_XY, port_Readout_Phi, motorSpeed=500, baudrateVRO=9600, baudrateVXC=57600, timeout=1, echo=1):
         self.port_Motors = port_Motors
         self.port_Readout_XY = port_Readout_XY
         self.port_Readout_Phi = port_Readout_Phi
+        self.motorSpeed = motorSpeed
         self.baudrateVRO = baudrateVRO
         self.baudrateVXC = baudrateVXC
         self.timeout = timeout
@@ -21,7 +22,7 @@ class NEO_Controller:
         print("\n[SYSTEM] Connecting...\n")
 
         # COM3 - VXC Motors
-        self.Motors = VXC_Controller(port=self.port_Motors, baudrate = self.baudrateVXC, timeout= self.timeout, echo=self.echo) 
+        self.Motors = VXC_Controller(port=self.port_Motors, motorSpeed = self.motorSpeed, baudrate = self.baudrateVXC, timeout= self.timeout, echo=self.echo) 
         
         # COM4 - Readout XY 
         self.Readout_XY = VRO_Controller(port=self.port_Readout_XY, baudrate = self.baudrateVRO, timeout= self.timeout, echo=self.echo, type = 0) # COM4
@@ -48,17 +49,20 @@ class NEO_Controller:
 
         print("\n[SYSTEM] Calibrating...\n")
 
-        self.Motors.move_motor(1, 5000)
-        self.Motors.move_motor(2, 5000)
-        self.Motors.move_motor(3, 5000)
+        self.Motors.move_motor(1, 1000)
+        self.Motors.move_motor(2, 1000)
+        self.Motors.move_motor(3, 1000)
+
+        # Allow time for readout to update after movement
+        time.sleep(0.2)
 
         #mm/step
-        self.X_sensitivity = float(self.Readout_XY.getPosition(0))/5000
-        self.Z_sensitivity = float(self.Readout_XY.getPosition(1))/5000
-        self.Phi_sensitivity = float(self.Readout_Phi.getPosition(0))/5000
+        self.X_sensitivity = float(self.Readout_XY.getPosition(0))/1000
+        self.Z_sensitivity = float(self.Readout_XY.getPosition(1))/1000
+        self.Phi_sensitivity = float(self.Readout_Phi.getPosition(0))/1000
 
-        print(f"[SYSTEM] X sensitivity: {self.X_sensitivity} mm/step")
-        print(f"[SYSTEM] Z sensitivity: {self.Z_sensitivity} mm/step")
+        print(f"[SYSTEM] X sensitivity: {self.X_sensitivity} um/step")
+        print(f"[SYSTEM] Z sensitivity: {self.Z_sensitivity} um/step")
         print(f"[SYSTEM] Phi sensitivity: {self.Phi_sensitivity} degrees/step\n")
 
         print(f"[SYSTEM] Calibration completed successfully, returning to home position.\n")
