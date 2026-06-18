@@ -10,15 +10,16 @@ if __name__ == "__main__":
 
 
     # COM3 = VXC Motors.   COM4 = Readout XY.   COM5 = Readout Phi
-    NEO = NEO_Controller('COM3', 'COM4', 'COM5', motorSpeed=1000, baudrateVXC=57600, baudrateVRO=9600, timeout=1, echo=0)
+    NEO = NEO_Controller('COM3', 'COM4', 'COM5', motorSpeed=100, baudrateVXC=57600, baudrateVRO=9600, timeout=1, echo=0)
     
     if not NEO.connect():
         print("[ERROR] Failed to connect to NEO.")
         NEO.disconnect()
         exit(1)
 
+    time.sleep(2)
 
-    if not NEO.calibrate():
+    if not NEO.calibrate(Step_Size):
         print("[ERROR] Failed to calibrate NEO.")
         NEO.disconnect()
         exit(1)

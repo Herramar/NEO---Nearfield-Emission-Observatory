@@ -24,8 +24,6 @@ class VRO_Controller:
                 stopbits=serial.STOPBITS_ONE
             )
 
-            time.sleep(2)
-
             if self.type == 0:
                 print(f"[SYSTEM] Connection established to {self.port} for XY VRO")
             else:

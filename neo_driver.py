@@ -6,7 +6,7 @@ from vro_driver import VRO_Controller
 class NEO_Controller:
 
 
-    def __init__(self, port_Motors, port_Readout_XY, port_Readout_Phi, motorSpeed=500, baudrateVRO=9600, baudrateVXC=57600, timeout=1, echo=1):
+    def __init__(self, port_Motors, port_Readout_XY, port_Readout_Phi, motorSpeed=200, baudrateVRO=9600, baudrateVXC=57600, timeout=1, echo=1):
         self.port_Motors = port_Motors
         self.port_Readout_XY = port_Readout_XY
         self.port_Readout_Phi = port_Readout_Phi
@@ -31,17 +31,15 @@ class NEO_Controller:
         self.Readout_Phi = VRO_Controller(port=self.port_Readout_Phi, baudrate = self.baudrateVRO, timeout= self.timeout, echo=self.echo, type = 1) # COM5
         
         self.connection = self.Motors.connect() and self.Readout_XY.connect() and self.Readout_Phi.connect()
-        print("\n")
 
         if not self.connection:
             return False
         else:
+            print("\n[SYSTEM] Setting Home Coordinates...\n")
             return True
 
 
-    def calibrate(self):
-
-        print("\n[SYSTEM] Setting Home Coordinates...\n")
+    def calibrate(self, step):
 
         if not self.Readout_XY.setHome() and self.Readout_Phi.setHome():
             print(f"[ERROR] Failed to set home coordinates.")
@@ -49,25 +47,27 @@ class NEO_Controller:
 
         print("\n[SYSTEM] Calibrating...\n")
 
-        self.Motors.move_motor(1, 1000)
-        self.Motors.move_motor(2, 1000)
-        self.Motors.move_motor(3, 1000)
+        self.Motors.move_motor(1, 100)
+        self.Motors.move_motor(2, 100)
+        self.Motors.move_motor(3, 100)
 
         # Allow time for readout to update after movement
         time.sleep(0.2)
 
         #mm/step
-        self.X_sensitivity = float(self.Readout_XY.getPosition(0))/1000
-        self.Z_sensitivity = float(self.Readout_XY.getPosition(1))/1000
-        self.Phi_sensitivity = float(self.Readout_Phi.getPosition(0))/1000
+        self.X_sensitivity = float(self.Readout_XY.getPosition(0))/100000
+        self.Z_sensitivity = float(self.Readout_XY.getPosition(1))/100000
+        self.Phi_sensitivity = float(self.Readout_Phi.getPosition(0))/100
 
-        print(f"[SYSTEM] X sensitivity: {self.X_sensitivity} um/step")
-        print(f"[SYSTEM] Z sensitivity: {self.Z_sensitivity} um/step")
+        print(f"[SYSTEM] X sensitivity: {self.X_sensitivity} mm/step")
+        print(f"[SYSTEM] Z sensitivity: {self.Z_sensitivity} mm/step")
         print(f"[SYSTEM] Phi sensitivity: {self.Phi_sensitivity} degrees/step\n")
 
         print(f"[SYSTEM] Calibration completed successfully, returning to home position.\n")
 
         if self.home():
+            self.move_up(step)
+            self.move_right(step)
             return True
         
         return False
@@ -115,35 +115,35 @@ class NEO_Controller:
 
 
     def move_up(self, distance):
-        if self.Motors.move_motor(2, round(distance*self.Z_sensitivity)):
+        if self.Motors.move_motor(2, round(distance/self.Z_sensitivity)):
             return True
         else:
             return False
 
 
     def move_down(self, distance):
-        if self.Motors.move_motor(2, round(-distance*self.Z_sensitivity)):
+        if self.Motors.move_motor(2, round(-distance/self.Z_sensitivity)):
             return True
         else:            
             return False
 
 
     def move_left(self, distance):
-        if self.Motors.move_motor(1, round(-distance*self.X_sensitivity)):
+        if self.Motors.move_motor(1, round(-distance/self.X_sensitivity)):
             return True
         else:
             return False
 
 
     def move_right(self, distance):
-        if self.Motors.move_motor(1, round(distance*self.X_sensitivity)):
+        if self.Motors.move_motor(1, round(distance/self.X_sensitivity)):
             return True
         else:
             return False
 
 
     def rotate(self, Phi):
-        if self.Motors.move_motor(3, round(Phi*self.Phi_sensitivity)):
+        if self.Motors.move_motor(3, round(Phi/self.Phi_sensitivity)):
             return True
         else:
             return False

@@ -25,19 +25,17 @@ class VXC_Controller:
                 stopbits=serial.STOPBITS_ONE
             )
 
-            time.sleep(2)
-
             print(f"[SYSTEM] Connection established to {self.port} for VXC Motors.")
             if self.connection and self.connection.is_open:
+                self.connection.reset_input_buffer()
+                self.connection.reset_output_buffer()
                 if self.echo == 1:
-                    message = "E,"
-                    self.connection.write(f"{message}".encode('utf-8'))
+                    message = "E C S1M" + str(self.motorSpeed) + ", S2M" + str(self.motorSpeed) + ", S3M" + str(self.motorSpeed) + "R"
                     print(f"[CONFIG] Echo: ON")
                 else:
-                    message = "F,"
-                    self.connection.write(f"{message}".encode('utf-8'))
+                    message = "F C S1M" + str(self.motorSpeed) + ", S2M" + str(self.motorSpeed) + ", S3M" + str(self.motorSpeed) + "R"
+                    print(f"[CONFIG] Echo: OFF")
 
-                message = "S1M" + str(self.motorSpeed) + ", S2M" + str(self.motorSpeed) + ", S3M" + str(self.motorSpeed) + ", R"
                 self.connection.write(f"{message}".encode('utf-8'))
                 return True
             else:
