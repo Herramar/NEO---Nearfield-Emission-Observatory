@@ -59,7 +59,7 @@ class VXC_Controller:
                 # Adding \n because terminals usually wait for a newline to display
                 message = "C I" + str(motor_number) + "M" + str(steps) + ", R"
                 self.connection.write(f"{message}".encode('utf-8'))
-                print(f"[{self.port}] Sent: {message}")
+                #print(f"[{self.port}] Sent: {message}")
                 if self.wait_for_completion():
                     time.sleep(0.2)  # Additional delay to ensure movement is fully settled
                     return True
@@ -70,39 +70,19 @@ class VXC_Controller:
         else:
             print(f"[ERROR] Could not connect to motors\n")
 
-
-    def home(self):
-        if self.connection and self.connection.is_open:
-            for motor_number in range(1,4):
-                # Adding \n because terminals usually wait for a newline to display
-                #IAmM0
-                message = "C IA" + str(int(motor_number)) + "M0, R"
-                self.connection.reset_input_buffer()
-                self.connection.write(f"{message}".encode('utf-8'))
-                print(f"[{self.port}] Sent: {message}")
-                if not self.wait_for_completion():
-                    print(f"[ERROR] Failed to home motor {motor_number}\n")
-                    return False
-                time.sleep(0.2) # Small delay between homing each motor
-            return True
-        else:
-            print(f"[ERROR] Could not connect to motors\n")
-            return False
-
-
     def wait_for_completion(self, timeout=30):
         """Blocks until the '^' character is received or timeout occurs."""
         start_time = time.time()
         buffer = ""
         
-        print("[SYSTEM] Waiting for movement to finish...")
+        #print("[SYSTEM] Waiting for movement to finish...")
         
         while (time.time() - start_time) < timeout:
             if self.connection.in_waiting > 0:
                 # Read one byte at a time to catch the '^' immediately
                 char = self.connection.read(1).decode('utf-8')
                 if char == '^':
-                    print(f"[{self.port}] Movement complete (^ received)")
+                    #print(f"[{self.port}] Movement complete (^ received)")
                     return True
             time.sleep(0.01) # Tiny sleep to prevent 100% CPU usage
             

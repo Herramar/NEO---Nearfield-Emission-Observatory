@@ -50,11 +50,16 @@ class VRO_Controller:
     
     def getPosition(self, axis=0):
         if self.connection and self.connection.is_open:
-            message = str(axis +1)
+            
+            if axis == 0:
+                message = "X"
+            else:
+                message = "Y"
+
             self.connection.write(f"{message}".encode('utf-8'))
-            print(f"[{self.port}] Sent: {message}")
+            #print(f"[{self.port}] Sent: {message}")
             response = self.connection.read_until(b'\r').decode('utf-8').strip()
-            print(f"[{self.port}] Received: {response}")
+            #print(f"[{self.port}] Received: {response}")
             return response
         else:
             if self.type == 0:
@@ -68,9 +73,9 @@ class VRO_Controller:
         if self.connection and self.connection.is_open:
             message = "C"
             self.connection.write(f"{message}".encode('utf-8'))
-            print(f"[{self.port}] Sent: {message}")
+            #print(f"[{self.port}] Sent: {message}")
             response = self.connection.read_until(b'\r').decode('utf-8').strip()
-            print(f"[{self.port}] Received: {response}")
+            #print(f"[{self.port}] Received: {response}")
             return response
         else:
             if self.type == 0:
