@@ -26,7 +26,8 @@ cover:
 - [the positioning-controller API](documentation/controller-api.md);
 - [PNA configuration and NumPy acquisition](documentation/vna-guide.md);
 - [scan traversal and array shapes](documentation/scan-data-model.md); and
-- [testing and troubleshooting](documentation/testing-and-troubleshooting.md).
+- [testing and troubleshooting](documentation/testing-and-troubleshooting.md); and
+- [the per-file automated test guide](tests/README.md).
 
 ## Repository structure
 
