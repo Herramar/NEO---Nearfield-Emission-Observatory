@@ -1,2 +1,4 @@
 numpy
+pyvisa
+pyvisa-py
 pyserial
