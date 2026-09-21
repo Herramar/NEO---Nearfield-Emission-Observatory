@@ -83,10 +83,10 @@ degrees]`.
 
 ## Relationship to VNA data
 
-One call to `VNA_Controller.measure()` returns shape `(Nf, 3)`, where `Nf` is
-the number of frequency points. A frequency-resolved complex scan cannot fit
-in the existing two-dimensional `measurement_matrix` without defining an
-additional frequency axis.
+One call to `NEO_Controller.measure_vna()` delegates to the owned VNA driver
+and returns shape `(Nf, 3)`, where `Nf` is the number of frequency points. A
+frequency-resolved complex scan cannot fit in the existing two-dimensional
+`measurement_matrix` without defining an additional frequency axis.
 
 A natural future representation would separate the frequency vector from a
 complex scan cube:

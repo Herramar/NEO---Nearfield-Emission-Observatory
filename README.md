@@ -7,8 +7,8 @@ connections, and with a Keysight PNA-family VNA over Ethernet.
 
 ## Components
 
-- `neo/neo_driver.py`: high-level controller for connection, calibration,
-  homing, translation, rotation, and spiral-grid traversal.
+- `neo/neo_driver.py`: high-level controller that owns the motor, readout, and
+  VNA drivers and provides positioning and RF-acquisition entry points.
 - `neo/drivers/vxc_driver.py`: serial driver for the three-axis motor controller.
 - `neo/drivers/vro_driver.py`: serial driver for the XY and angular position
   readouts.
@@ -43,6 +43,7 @@ cover:
 |   |-- testing-and-troubleshooting.md
 |   `-- vna-guide.md
 |-- tests/
+|   |-- test_neo_vna_integration.py
 |   `-- test_vna_driver.py
 `-- neo/
     |-- __init__.py
@@ -92,10 +93,20 @@ neo = NEO_Controller(
     port_Motors="COM3",
     port_Readout_XY="COM4",
     port_Readout_Phi="COM5",
+    host_VNA="192.168.0.10",
 )
 
 if neo.connect():
     try:
+        neo.configure_vna(
+            parameter="S21",
+            trace_name="NEO_S21",
+            start_frequency=170e9,
+            stop_frequency=200e9,
+            points=401,
+            if_bandwidth=1e3,
+        )
+        vna_measurement = neo.measure_vna(trace_name="NEO_S21")
         neo.calibrate()
         neo.home()
         order, positions, measurements = neo.measure(5, 5, 1)
@@ -103,27 +114,27 @@ if neo.connect():
         neo.disconnect()
 ```
 
-The VNA driver uses a VXI-11 resource by default. Replace the example IP
-address and sweep limits with the values for the measurement setup:
+`NEO_Controller` exposes the connected VNA as `neo.VNA`. Its high-level
+`measure_vna()` method returns the PNA trace as a NumPy matrix with columns
+`[frequency_hz, real, imag]`. The low-level driver uses a VXI-11 resource by
+default. Replace the example address and sweep limits with the values for the
+measurement setup.
 
 ```python
-from neo.drivers import VNA_Controller
-
-vna = VNA_Controller("192.168.0.10", timeout=30)
-if vna.connect():
-    try:
-        vna.configure_measurement("S21", trace_name="NEO_S21")
-        vna.configure_sweep(170e9, 200e9, 401, if_bandwidth=1e3)
-        measurement = vna.measure(trace_name="NEO_S21")
-        # measurement[:, 0]: frequency in Hz
-        # measurement[:, 1]: real(S21)
-        # measurement[:, 2]: imag(S21)
-    finally:
-        vna.disconnect()
+neo.configure_vna(
+    parameter="S21",
+    trace_name="NEO_S21",
+    start_frequency=170e9,
+    stop_frequency=200e9,
+    points=401,
+    if_bandwidth=1e3,
+)
+measurement = neo.measure_vna(trace_name="NEO_S21")
 ```
 
-For a PNA configured for HiSLIP, pass its complete VISA resource, for example
-`resource_name="TCPIP0::192.168.0.10::hislip0::INSTR"`.
+For a PNA configured for HiSLIP, pass its complete VISA resource to the
+high-level constructor, for example
+`resourceNameVNA="TCPIP0::192.168.0.10::hislip0::INSTR"`.
 
 See the [VNA guide](documentation/vna-guide.md) for the full API, command
 sequence, units, array definition, and measurement-integrity checklist.
@@ -141,9 +152,10 @@ The complete commissioning checklist is in
 ## Current scope
 
 The scan routine's `measurement_matrix` still contains traversal markers.
-The VNA driver provides trace acquisition independently and is ready to be
-connected to the scan routine once the required per-position trace shape and
-storage policy are defined.
+The VNA is owned by `NEO_Controller` and can be acquired through
+`measure_vna()`, but spatial `measure()` does not yet trigger it at each grid
+position. Per-position trace storage still requires a defined frequency-axis,
+metadata, and failure policy.
 
 The exact current scan representation and a proposed future complex-data model
 are documented in [Scan data model](documentation/scan-data-model.md).

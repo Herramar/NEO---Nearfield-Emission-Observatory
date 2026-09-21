@@ -2,9 +2,10 @@
 
 ## Overview
 
-NEO separates positioning hardware from instrument acquisition. The
-high-level `NEO_Controller` coordinates the motor controller and position
-readouts. `VNA_Controller` is currently an independent instrument driver.
+The high-level `NEO_Controller` owns and coordinates four peer hardware
+drivers: the motor controller, two position readouts, and the PNA driver.
+Positioning and RF acquisition remain separate high-level operations so their
+different array shapes and failure modes stay explicit.
 
 ```mermaid
 flowchart LR
@@ -20,16 +21,17 @@ flowchart LR
     PNA[Keysight PNA]
 
     App --> NEO
-    App --> VNA
     NEO --> VXC -->|Serial| Motors
     NEO --> XY -->|Serial| XYHW
     NEO --> Phi -->|Serial| PhiHW
+    NEO --> VNA
     VNA -->|Ethernet VISA/SCPI| PNA
 ```
 
-There is no call from `NEO_Controller` to `VNA_Controller` in the current
-code. A scan application must coordinate them itself or extend the high-level
-controller after defining the desired trace-storage format.
+`NEO_Controller.connect()` connects all four drivers. Applications configure
+and acquire the owned PNA through `configure_vna()` and `measure_vna()` or,
+when lower-level control is required, through the `VNA` attribute. Spatial
+`measure()` does not yet call the VNA at every grid position.
 
 ## Repository layout
 
@@ -55,6 +57,7 @@ controller after defining the desired trace-storage format.
 |       |-- vro_driver.py
 |       `-- vxc_driver.py
 `-- tests/
+    |-- test_neo_vna_integration.py
     `-- test_vna_driver.py
 ```
 
@@ -62,10 +65,11 @@ controller after defining the desired trace-storage format.
 
 ### `neo/neo_driver.py`
 
-Provides `NEO_Controller`, the positioning facade. It opens three serial
-connections, estimates distance-per-step and angle-per-step sensitivities,
-homes the axes, translates or rotates the stage, and traverses a grid in an
-outward spiral.
+Provides `NEO_Controller`, the hardware facade. It opens three serial
+connections and one Ethernet PNA connection, estimates distance-per-step and
+angle-per-step sensitivities, homes the axes, translates or rotates the stage,
+traverses a grid in an outward spiral, and exposes PNA configuration and trace
+acquisition.
 
 ### `neo/drivers/vxc_driver.py`
 
@@ -81,24 +85,27 @@ and sends the readout's home-setting command.
 
 ### `neo/drivers/vna_driver.py`
 
-Provides `VNA_Controller`. It opens a PyVISA resource, identifies the PNA,
+Provides the low-level `VNA_Controller` used by `NEO_Controller`. It opens a
+PyVISA resource, identifies the PNA,
 creates or selects an S-parameter measurement, configures a linear sweep,
 performs a synchronized acquisition, and converts binary corrected data into
 a NumPy matrix.
 
 ### `Tester.py`
 
-Demonstrates the positioning workflow using fixed COM ports. It calibrates,
-homes, performs a 5 x 5 scan at `Phi=0`, rotates to 90 degrees, performs a
-second scan, returns home, and prints the arrays. It does not use the VNA.
+Demonstrates the positioning workflow using fixed COM ports and a configurable
+PNA IP address. It connects all four controllers, calibrates, homes, performs a
+5 x 5 scan at `Phi=0`, rotates to 90 degrees, performs a second scan, returns
+home, and prints the arrays. It does not yet configure or acquire a VNA trace.
 
 ## Connection ownership
 
-- `NEO_Controller.connect()` constructs the motor and two readout driver
-  instances and calls their `connect()` methods.
+- `NEO_Controller.connect()` constructs the motor, two readout, and VNA driver
+  instances and calls all four `connect()` methods.
 - The serial drivers construct their own `serial.Serial` objects.
-- `VNA_Controller` normally constructs its own PyVISA resource manager. Tests
-  or applications may inject a resource manager through the constructor.
+- The VNA owned by `NEO_Controller` normally constructs its own PyVISA
+  resource manager. Tests or applications may inject a resource manager
+  through `resourceManagerVNA`.
 - An injected VNA resource manager remains owned by the caller and is not
   closed by `VNA_Controller.disconnect()`.
 

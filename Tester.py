@@ -6,12 +6,23 @@ Wait = 1
 Horizontal_Length = 5 #mm
 Vertical_Length = 5 #mm
 Step_Size = 1 #mm
+VNA_IP = "192.168.0.10"  # Replace with the PNA IPv4 address or hostname.
 
 if __name__ == "__main__":
 
 
     # COM3 = VXC Motors.   COM4 = Readout XY.   COM5 = Readout Phi
-    NEO = NEO_Controller('COM3', 'COM4', 'COM5', motorSpeed=100, baudrateVXC=57600, baudrateVRO=9600, timeout=1, echo=0)
+    NEO = NEO_Controller(
+        'COM3',
+        'COM4',
+        'COM5',
+        VNA_IP,
+        motorSpeed=100,
+        baudrateVXC=57600,
+        baudrateVRO=9600,
+        timeout=1,
+        echo=0,
+    )
     
     if not NEO.connect():
         print("[ERROR] Failed to connect to NEO.")

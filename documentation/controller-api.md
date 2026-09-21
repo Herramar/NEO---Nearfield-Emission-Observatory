@@ -19,11 +19,16 @@ NEO_Controller(
     port_Motors,
     port_Readout_XY,
     port_Readout_Phi,
+    host_VNA,
     motorSpeed=100,
     baudrateVRO=9600,
     baudrateVXC=57600,
     timeout=1,
     echo=1,
+    timeoutVNA=30,
+    resourceNameVNA=None,
+    visaBackendVNA=None,
+    resourceManagerVNA=None,
 )
 ```
 
@@ -32,24 +37,57 @@ NEO_Controller(
 | `port_Motors` | Serial port for the three-axis motor controller |
 | `port_Readout_XY` | Serial port for the two-axis translation readout |
 | `port_Readout_Phi` | Serial port for the angular readout |
+| `host_VNA` | PNA hostname or IPv4 address |
 | `motorSpeed` | Speed value sent to motors 1, 2, and 3 |
 | `baudrateVRO` | Baud rate for both readout connections |
 | `baudrateVXC` | Baud rate for the motor controller |
 | `timeout` | Serial timeout in seconds |
 | `echo` | `1` enables device echo; other values select echo off |
+| `timeoutVNA` | PNA VISA timeout in seconds |
+| `resourceNameVNA` | Optional complete VISA resource override |
+| `visaBackendVNA` | Optional PyVISA backend argument |
+| `resourceManagerVNA` | Optional injected VISA resource manager |
 
 The initial `X_sensitivity`, `Z_sensitivity`, and `Phi_sensitivity` values are
 all `1.0` until `calibrate()` replaces them.
 
 ### `connect()`
 
-Constructs the three low-level controllers and connects them in this order:
-motor controller, XY readout, angular readout. Returns `True` only if all three
-connections return true.
+Constructs four peer low-level controllers and connects them in this order:
+motor controller, XY readout, angular readout, and VNA. All four connection
+attempts are made. The connected VNA is available as `neo.VNA`; the other
+attributes are `neo.Motors`, `neo.Readout_XY`, and `neo.Readout_Phi`.
 
-The expression uses short-circuit evaluation. If one connection fails, later
-connections are not attempted. A failed partial connection is not
-automatically rolled back.
+The method returns `True` only if all four connections return true. A failed
+partial connection is not automatically rolled back; call `disconnect()` to
+close the successfully opened controllers.
+
+### `configure_vna(...)`
+
+```python
+configure_vna(
+    parameter="S21",
+    channel=1,
+    trace_name="NEO_S21",
+    start_frequency=...,
+    stop_frequency=...,
+    points=...,
+    if_bandwidth=None,
+    source_power=None,
+)
+```
+
+Configures the measurement and linear sweep on the owned `VNA` driver.
+`start_frequency`, `stop_frequency`, and `points` are required. It raises
+`RuntimeError` when the PNA is disconnected and `ValueError` when a required
+sweep argument is missing. Units and low-level validation are documented in
+the [VNA guide](vna-guide.md).
+
+### `measure_vna(channel=1, trace_name=None, trigger=True)`
+
+Acquires through the owned `VNA` driver and returns its `(N, 3)` floating
+NumPy matrix with columns `[frequency_hz, real, imag]`. It raises
+`RuntimeError` when the PNA is disconnected.
 
 ### `calibrate()`
 
@@ -121,9 +159,10 @@ before using its output.
 
 ### `disconnect()`
 
-Calls `disconnect()` on the motor and both readout controllers. It assumes the
-three attributes were created by `connect()`. Calling it before connection or
-after an early connection failure can raise `AttributeError`.
+Calls `disconnect()` on each connected controller: motor, XY readout, angular
+readout, and VNA. Controllers that were not constructed or did not obtain a
+connection are skipped. The aggregate `connection` flag is then set to
+`False`.
 
 ## `VXC_Controller`
 
@@ -213,5 +252,7 @@ Sends `Q,`. The current method does not call `serial.Serial.close()`.
 
 ## `VNA_Controller`
 
-The VNA API is documented separately because it has different connection,
-error, triggering, and data-return behavior. See the [VNA guide](vna-guide.md).
+`VNA_Controller` is the low-level driver owned by `NEO_Controller` and exposed
+as its `VNA` attribute. The VNA API is documented separately because it has
+different connection, error, triggering, and data-return behavior. See the
+[VNA guide](vna-guide.md).

@@ -28,8 +28,8 @@ listed here have been validated.
 | XY and angular readout | Implemented through `VRO_Controller` |
 | Motion calibration and homing | Implemented; requires supervised hardware validation |
 | Spiral-grid traversal | Implemented for the demonstrated 5 x 5 use case |
-| Ethernet PNA connection | Implemented through `VNA_Controller` |
-| S-parameter sweep acquisition | Implemented as an independent NumPy-returning API |
+| Ethernet PNA connection | Owned and connected by `NEO_Controller` through `VNA_Controller` |
+| S-parameter sweep acquisition | Exposed by `NEO_Controller.measure_vna()` as a NumPy-returning API |
 | VNA acquisition at every scan position | Not integrated into `NEO_Controller.measure()` |
 | Automated hardware integration tests | Not present |
 
@@ -46,8 +46,8 @@ listed here have been validated.
 
 ## Important scope boundary
 
-`VNA_Controller.measure()` acquires a frequency trace from the PNA. In
-contrast, `NEO_Controller.measure()` currently moves the positioner and fills
-its `measurement_matrix` with the value `1` at visited positions. Applications
-must not treat that scan matrix as measured RF data until the two controllers
-are explicitly integrated.
+`NEO_Controller.measure_vna()` acquires a frequency trace through the owned
+PNA driver. In contrast, `NEO_Controller.measure()` currently moves the
+positioner and fills its `measurement_matrix` with the value `1` at visited
+positions. Applications must not treat that scan matrix as measured RF data
+until VNA acquisition is explicitly added to the spatial traversal.

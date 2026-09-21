@@ -2,8 +2,9 @@
 
 ## Purpose and supported behavior
 
-`VNA_Controller` controls a Keysight PNA-family vector network analyzer over
-an Ethernet VISA resource. It can:
+`NEO_Controller` owns a `VNA_Controller` alongside its motor and readout
+drivers. The low-level VNA driver controls a Keysight PNA-family vector network
+analyzer over an Ethernet VISA resource. It can:
 
 - open and close a VISA instrument session;
 - query the IEEE-488.2 identification string;
@@ -17,42 +18,48 @@ It does not perform calibration, calibration-kit definition, de-embedding,
 port extension, averaging configuration, time-domain conversion, multi-trace
 acquisition, or file storage on the PNA.
 
-## Import and constructor
+## High-level construction
 
 ```python
-from neo.drivers import VNA_Controller
+from neo import NEO_Controller
 
-vna = VNA_Controller(
-    host="192.168.0.10",
-    timeout=30,
-    resource_name=None,
-    visa_backend=None,
-    resource_manager=None,
+neo = NEO_Controller(
+    port_Motors="COM3",
+    port_Readout_XY="COM4",
+    port_Readout_Phi="COM5",
+    host_VNA="192.168.0.10",
+    timeoutVNA=30,
+    resourceNameVNA=None,
+    visaBackendVNA=None,
+    resourceManagerVNA=None,
 )
 ```
 
 | Parameter | Meaning |
 | --- | --- |
-| `host` | PNA hostname or IPv4 address used in the default resource string |
-| `timeout` | VISA I/O timeout in seconds |
-| `resource_name` | Complete VISA resource override |
-| `visa_backend` | Optional argument passed to `pyvisa.ResourceManager()` |
-| `resource_manager` | Optional preconstructed resource manager, mainly for tests or shared ownership |
+| `host_VNA` | PNA hostname or IPv4 address used in the default resource string |
+| `timeoutVNA` | VISA I/O timeout in seconds |
+| `resourceNameVNA` | Complete VISA resource override |
+| `visaBackendVNA` | Optional argument passed to `pyvisa.ResourceManager()` |
+| `resourceManagerVNA` | Optional preconstructed resource manager, mainly for tests or shared ownership |
 
 The default resource is `TCPIP0::<host>::inst0::INSTR`. The driver owns and
 closes a resource manager that it constructs. It does not close an injected
-resource manager.
+resource manager. After a successful `neo.connect()`, the low-level controller
+is available as `neo.VNA`.
 
 ## Connection
 
 ```python
-if not vna.connect():
-    raise RuntimeError(vna.last_error)
+if not neo.connect():
+    raise RuntimeError(neo.VNA.last_error if neo.VNA else "NEO connection failed")
 
-print(vna.idn)
+print(neo.VNA.idn)
 ```
 
-`connect()` opens the resource, converts the timeout to milliseconds, sets
+`NEO_Controller.connect()` constructs and connects the VNA after attempting
+the motor and two readout connections. The VNA driver's `connect()` opens the
+resource, converts the timeout to milliseconds, sets
 newline read and write termination, sends `*CLS`, and queries `*IDN?`. It
 returns `True` only when the identification response is non-empty.
 
@@ -63,13 +70,13 @@ On failure it:
 - prints an error; and
 - returns `False`.
 
-`identify()` repeats the `*IDN?` query and returns the stripped response. It
+`neo.VNA.identify()` repeats the `*IDN?` query and returns the stripped response. It
 raises `RuntimeError` if the driver is disconnected.
 
 ## Configure an S-parameter
 
 ```python
-vna.configure_measurement(
+neo.VNA.configure_measurement(
     parameter="S21",
     channel=1,
     trace_name="NEO_S21",
@@ -94,7 +101,9 @@ configuration.
 ## Configure a linear sweep
 
 ```python
-vna.configure_sweep(
+neo.configure_vna(
+    parameter="S21",
+    trace_name="NEO_S21",
     start_frequency=170e9,
     stop_frequency=200e9,
     points=401,
@@ -120,7 +129,7 @@ for enforcing its model-specific frequency, power, and point-count limits.
 ## Acquire a trace
 
 ```python
-matrix = vna.measure(channel=1, trace_name="NEO_S21", trigger=True)
+matrix = neo.measure_vna(channel=1, trace_name="NEO_S21", trigger=True)
 ```
 
 When `trigger=True`, the driver:
@@ -168,30 +177,33 @@ trace lengths rather than silently truncating them.
 ```python
 import numpy as np
 
-from neo.drivers import VNA_Controller
+from neo import NEO_Controller
 
 
-vna = VNA_Controller("192.168.0.10", timeout=30)
-if not vna.connect():
-    raise RuntimeError(f"PNA connection failed: {vna.last_error}")
+neo = NEO_Controller("COM3", "COM4", "COM5", "192.168.0.10", timeoutVNA=30)
+if not neo.connect():
+    error = neo.VNA.last_error if neo.VNA else "VNA was not constructed"
+    neo.disconnect()
+    raise RuntimeError(f"NEO connection failed: {error}")
 
 try:
-    vna.configure_measurement("S21", channel=1, trace_name="NEO_S21")
-    vna.configure_sweep(
-        170e9,
-        200e9,
-        401,
+    neo.configure_vna(
+        parameter="S21",
         channel=1,
+        trace_name="NEO_S21",
+        start_frequency=170e9,
+        stop_frequency=200e9,
+        points=401,
         if_bandwidth=1e3,
         source_power=-20,
     )
-    measurement = vna.measure(channel=1, trace_name="NEO_S21")
+    measurement = neo.measure_vna(channel=1, trace_name="NEO_S21")
 
     frequency_hz = measurement[:, 0]
     s21 = measurement[:, 1] + 1j * measurement[:, 2]
     magnitude_db = 20 * np.log10(np.abs(s21))
 finally:
-    vna.disconnect()
+    neo.disconnect()
 ```
 
 ## Measurement integrity

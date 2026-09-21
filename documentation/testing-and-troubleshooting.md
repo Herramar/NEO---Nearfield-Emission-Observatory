@@ -8,8 +8,11 @@ Run the hardware-independent test suite from the repository root:
 python -m unittest discover -s tests -v
 ```
 
-The current tests use a fake VISA resource manager and instrument. They cover:
+The current tests use fake serial and VISA controllers. They cover:
 
+- ownership of the VNA at the same level as the motor and readout drivers;
+- high-level VNA configuration and measurement delegation;
+- disconnection of all four controllers;
 - construction of the default VXI-11 resource string;
 - conversion of the timeout from seconds to milliseconds;
 - measurement and sweep command flow;
@@ -33,8 +36,9 @@ python -m py_compile neo/*.py neo/drivers/*.py tests/*.py
 Inspect the stored exception:
 
 ```python
-if not vna.connect():
-    print(type(vna.last_error).__name__, vna.last_error)
+if not neo.connect():
+    error = neo.VNA.last_error if neo.VNA else None
+    print(type(error).__name__, error)
 ```
 
 Check, in order:
@@ -113,8 +117,9 @@ neo.Readout_XY.connection.close()
 neo.Readout_Phi.connection.close()
 ```
 
-Only do this after `connect()` successfully created all three controller
-attributes. This documents the current behavior; changing resource ownership
+Only do this after `connect()` successfully created all three serial-controller
+attributes. The high-level `disconnect()` also closes the owned VNA session.
+This documents the current serial behavior; changing serial resource ownership
 should be handled as a separate code revision with tests.
 
 ## Hardware validation sequence

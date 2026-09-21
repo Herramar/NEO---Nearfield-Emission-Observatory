@@ -74,18 +74,21 @@ TCPIP0::<IPv4 address or hostname>::inst0::INSTR
 For example:
 
 ```python
-from neo.drivers import VNA_Controller
+from neo import NEO_Controller
 
-vna = VNA_Controller("192.168.0.10")
+neo = NEO_Controller("COM3", "COM4", "COM5", "192.168.0.10")
 ```
 
 This selects the VXI-11 `inst0` endpoint. A complete resource string can
 override it, including a HiSLIP endpoint:
 
 ```python
-vna = VNA_Controller(
+neo = NEO_Controller(
+    "COM3",
+    "COM4",
+    "COM5",
     "192.168.0.10",
-    resource_name="TCPIP0::192.168.0.10::hislip0::INSTR",
+    resourceNameVNA="TCPIP0::192.168.0.10::hislip0::INSTR",
 )
 ```
 
@@ -124,21 +127,18 @@ a scan:
 
 ```python
 from neo import NEO_Controller
-from neo.drivers import VNA_Controller
+neo = NEO_Controller("COM3", "COM4", "COM5", "192.168.0.10", echo=0)
 
-positioner = NEO_Controller("COM3", "COM4", "COM5", echo=0)
-vna = VNA_Controller("192.168.0.10")
-
-positioner_ok = positioner.connect()
-vna_ok = vna.connect()
-
-print("Positioner connected:", positioner_ok)
-print("PNA identification:", vna.idn if vna_ok else vna.last_error)
-
-if vna_ok:
-    vna.disconnect()
-if positioner_ok:
-    positioner.disconnect()
+if neo.connect():
+    try:
+        print("NEO connected:", neo.connection)
+        print("PNA identification:", neo.VNA.idn)
+    finally:
+        neo.disconnect()
+else:
+    print("One or more NEO hardware connections failed.")
+    print("PNA error:", neo.VNA.last_error if neo.VNA else None)
+    neo.disconnect()
 ```
 
 Do not use this connection check as proof that motion directions, scale
