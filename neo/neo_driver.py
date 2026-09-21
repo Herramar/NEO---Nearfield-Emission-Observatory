@@ -1,8 +1,8 @@
 import serial
 import time
 import numpy as np
-from vxc_driver import VXC_Controller
-from vro_driver import VRO_Controller
+from .drivers.vxc_driver import VXC_Controller
+from .drivers.vro_driver import VRO_Controller
 
 class NEO_Controller:
 

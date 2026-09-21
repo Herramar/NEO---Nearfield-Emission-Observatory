@@ -7,13 +7,28 @@ connections.
 
 ## Components
 
-- `neo_driver.py`: high-level controller for connection, calibration,
+- `neo/neo_driver.py`: high-level controller for connection, calibration,
   homing, translation, rotation, and spiral-grid traversal.
-- `vxc_driver.py`: serial driver for the three-axis motor controller.
-- `vro_driver.py`: serial driver for the XY and angular position
+- `neo/drivers/vxc_driver.py`: serial driver for the three-axis motor controller.
+- `neo/drivers/vro_driver.py`: serial driver for the XY and angular position
   readouts.
 - `Tester.py`: hardware test script demonstrating calibration and two
   5 x 5 scans at 0 and 90 degrees.
+
+## Repository structure
+
+```text
+.
+|-- Tester.py
+|-- requirements.txt
+`-- neo/
+    |-- __init__.py
+    |-- neo_driver.py
+    `-- drivers/
+        |-- __init__.py
+        |-- vro_driver.py
+        `-- vxc_driver.py
+```
 
 ## Requirements
 
@@ -46,7 +61,7 @@ python Tester.py
 The high-level interface can also be instantiated directly:
 
 ```python
-from neo_driver import NEO_Controller
+from neo import NEO_Controller
 
 neo = NEO_Controller(
     port_Motors="COM3",

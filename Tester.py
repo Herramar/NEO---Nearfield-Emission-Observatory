@@ -1,4 +1,4 @@
-from neo_driver import NEO_Controller
+from neo import NEO_Controller
 import time
 import numpy as np
 
