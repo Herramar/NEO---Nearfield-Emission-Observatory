@@ -16,12 +16,34 @@ connections, and with a Keysight PNA-family VNA over Ethernet.
 - `Tester.py`: hardware test script demonstrating calibration and two
   5 x 5 scans at 0 and 90 degrees.
 
+## Documentation
+
+Start with the [documentation index](documentation/README.md). Detailed guides
+cover:
+
+- [architecture and component responsibilities](documentation/architecture.md);
+- [hardware setup, dependencies, and commissioning safety](documentation/hardware-and-installation.md);
+- [the positioning-controller API](documentation/controller-api.md);
+- [PNA configuration and NumPy acquisition](documentation/vna-guide.md);
+- [scan traversal and array shapes](documentation/scan-data-model.md); and
+- [testing and troubleshooting](documentation/testing-and-troubleshooting.md).
+
 ## Repository structure
 
 ```text
 .
 |-- Tester.py
 |-- requirements.txt
+|-- documentation/
+|   |-- README.md
+|   |-- architecture.md
+|   |-- controller-api.md
+|   |-- hardware-and-installation.md
+|   |-- scan-data-model.md
+|   |-- testing-and-troubleshooting.md
+|   `-- vna-guide.md
+|-- tests/
+|   `-- test_vna_driver.py
 `-- neo/
     |-- __init__.py
     |-- neo_driver.py
@@ -103,6 +125,9 @@ if vna.connect():
 For a PNA configured for HiSLIP, pass its complete VISA resource, for example
 `resource_name="TCPIP0::192.168.0.10::hislip0::INSTR"`.
 
+See the [VNA guide](documentation/vna-guide.md) for the full API, command
+sequence, units, array definition, and measurement-integrity checklist.
+
 ## Hardware safety
 
 This software commands physical motion. Verify the serial-port
@@ -110,9 +135,15 @@ assignments, travel limits, coordinate signs, clearance, emergency-stop
 operation, and homing procedure before running a scan. Begin with low
 motor speeds and short movements under direct supervision.
 
+The complete commissioning checklist is in
+[Hardware and installation](documentation/hardware-and-installation.md).
+
 ## Current scope
 
 The scan routine's `measurement_matrix` still contains traversal markers.
 The VNA driver provides trace acquisition independently and is ready to be
 connected to the scan routine once the required per-position trace shape and
 storage policy are defined.
+
+The exact current scan representation and a proposed future complex-data model
+are documented in [Scan data model](documentation/scan-data-model.md).
