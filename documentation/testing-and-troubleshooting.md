@@ -1,6 +1,6 @@
 # Testing and Troubleshooting
 
-## Automated VNA tests
+## Automated tests
 
 Run the hardware-independent test suite from the repository root:
 
@@ -8,8 +8,13 @@ Run the hardware-independent test suite from the repository root:
 python -m unittest discover -s tests -v
 ```
 
-The current tests use fake serial and VISA controllers. They cover:
+The tests use fake serial and VISA controllers. They cover:
 
+- VRO serial configuration, echo modes, X/Y queries, homing, response parsing,
+  connection failures, disconnected behavior, and shutdown commands;
+- VXC serial configuration, echo modes, motor-speed setup, buffer resets,
+  motion-command formatting, motor selection, completion detection, timeout
+  behavior, connection failures, and shutdown commands;
 - ownership of the VNA at the same level as the motor and readout drivers;
 - high-level VNA configuration and measurement delegation;
 - disconnection of all four controllers;
@@ -22,8 +27,13 @@ The current tests use fake serial and VISA controllers. They cover:
 - invalid sweep-range rejection; and
 - session closure and disconnected-use rejection.
 
-These tests do not contact a PNA and do not validate model-specific limits,
-network configuration, calibration, RF performance, or physical motion.
+See [`tests/README.md`](../tests/README.md) for the purpose and scope of each
+test file and commands for running individual modules.
+
+These tests do not contact physical serial devices or a PNA. They do not
+validate model-specific limits, network configuration, calibration, RF
+performance, serial timing under load, position accuracy, travel limits, or
+physical motion.
 
 ## Syntax check
 
@@ -124,16 +134,14 @@ should be handled as a separate code revision with tests.
 
 ## Hardware validation sequence
 
-Use this progression for commissioning:
-
-1. Run the automated VNA tests.
-2. Connect to the PNA and verify only `*IDN?`.
-3. Acquire a trace from a known static setup and compare it with the PNA
+1. Run the complete automated test suite.
+2. Connect each serial device independently without motion.
+3. Verify readout queries and homing responses.
+4. Command small single-axis movements at low speed.
+5. Verify calibration factors and return-to-zero repeatability.
+6. Connect to the PNA and verify only `*IDN?`.
+7. Acquire a trace from a known static setup and compare it with the PNA
    display or an exported reference trace.
-4. Connect each serial device independently without motion.
-5. Verify readout queries.
-6. Command small single-axis movements at low speed.
-7. Verify calibration factors and return-to-zero repeatability.
 8. Dry-run the scan index sequence without connected mechanics if possible.
 9. Run a small supervised scan without RF acquisition.
 10. Integrate position and RF acquisition only after defining the persistent
