@@ -1,21 +1,46 @@
 import serial
 import time
 import numpy as np
-from vxc_driver import VXC_Controller
-from vro_driver import VRO_Controller
+from .drivers.vxc_driver import VXC_Controller
+from .drivers.vro_driver import VRO_Controller
+from .drivers.vna_driver import VNA_Controller
 
 class NEO_Controller:
 
-    def __init__(self, port_Motors, port_Readout_XY, port_Readout_Phi, motorSpeed=100, baudrateVRO=9600, baudrateVXC=57600, timeout=1, echo=1):
+    def __init__(
+        self,
+        port_Motors,
+        port_Readout_XY,
+        port_Readout_Phi,
+        host_VNA,
+        motorSpeed=100,
+        baudrateVRO=9600,
+        baudrateVXC=57600,
+        timeout=1,
+        echo=1,
+        timeoutVNA=30,
+        resourceNameVNA=None,
+        visaBackendVNA=None,
+        resourceManagerVNA=None,
+    ):
         self.port_Motors = port_Motors
         self.port_Readout_XY = port_Readout_XY
         self.port_Readout_Phi = port_Readout_Phi
+        self.host_VNA = host_VNA
         self.motorSpeed = motorSpeed
         self.baudrateVRO = baudrateVRO
         self.baudrateVXC = baudrateVXC
         self.timeout = timeout
         self.echo = echo
+        self.timeoutVNA = timeoutVNA
+        self.resourceNameVNA = resourceNameVNA
+        self.visaBackendVNA = visaBackendVNA
+        self.resourceManagerVNA = resourceManagerVNA
         self.connection = None
+        self.Motors = None
+        self.Readout_XY = None
+        self.Readout_Phi = None
+        self.VNA = None
         self.X_sensitivity = 1.0
         self.Z_sensitivity =  1.0
         self.Phi_sensitivity = 1.0
@@ -32,14 +57,72 @@ class NEO_Controller:
         
         # COM5 - Readout Phi
         self.Readout_Phi = VRO_Controller(port=self.port_Readout_Phi, baudrate = self.baudrateVRO, timeout= self.timeout, echo=self.echo, type = 1) # COM5
+
+        # Ethernet - Vector network analyzer
+        self.VNA = VNA_Controller(
+            host=self.host_VNA,
+            timeout=self.timeoutVNA,
+            resource_name=self.resourceNameVNA,
+            visa_backend=self.visaBackendVNA,
+            resource_manager=self.resourceManagerVNA,
+        )
         
-        self.connection = self.Motors.connect() and self.Readout_XY.connect() and self.Readout_Phi.connect()
+        motor_connected = self.Motors.connect()
+        xy_connected = self.Readout_XY.connect()
+        phi_connected = self.Readout_Phi.connect()
+        vna_connected = self.VNA.connect()
+        self.connection = all(
+            (motor_connected, xy_connected, phi_connected, vna_connected)
+        )
 
         if not self.connection:
             return False
         else:
             print("\n[SYSTEM] Setting Home Coordinates...\n")
             return True
+
+
+    def configure_vna(
+        self,
+        parameter="S21",
+        channel=1,
+        trace_name="NEO_S21",
+        start_frequency=None,
+        stop_frequency=None,
+        points=None,
+        if_bandwidth=None,
+        source_power=None,
+    ):
+        if not self.VNA or not self.VNA.is_connected:
+            raise RuntimeError("The VNA is not connected.")
+        if start_frequency is None or stop_frequency is None or points is None:
+            raise ValueError(
+                "start_frequency, stop_frequency, and points are required."
+            )
+
+        self.VNA.configure_measurement(
+            parameter=parameter,
+            channel=channel,
+            trace_name=trace_name,
+        )
+        self.VNA.configure_sweep(
+            start_frequency=start_frequency,
+            stop_frequency=stop_frequency,
+            points=points,
+            channel=channel,
+            if_bandwidth=if_bandwidth,
+            source_power=source_power,
+        )
+
+
+    def measure_vna(self, channel=1, trace_name=None, trigger=True):
+        if not self.VNA or not self.VNA.is_connected:
+            raise RuntimeError("The VNA is not connected.")
+        return self.VNA.measure(
+            channel=channel,
+            trace_name=trace_name,
+            trigger=trigger,
+        )
 
 
     def calibrate(self):
@@ -178,7 +261,12 @@ class NEO_Controller:
     
     def disconnect(self):
         print("\n[SYSTEM] Disconnecting...\n")
-        self.Motors.disconnect()
-        self.Readout_XY.disconnect()
-        self.Readout_Phi.disconnect()
+        controllers = (self.Motors, self.Readout_XY, self.Readout_Phi, self.VNA)
+        for controller in controllers:
+            if (
+                controller is not None
+                and getattr(controller, "connection", None) is not None
+            ):
+                controller.disconnect()
+        self.connection = False
         print("\n")
