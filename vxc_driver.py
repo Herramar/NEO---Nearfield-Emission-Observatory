@@ -34,7 +34,6 @@ class VXC_Controller:
                     print(f"[CONFIG] Echo: ON")
                 else:
                     message = "F C S1M" + str(self.motorSpeed) + ", S2M" + str(self.motorSpeed) + ", S3M" + str(self.motorSpeed) + "R"
-                    print(f"[CONFIG] Echo: OFF")
 
                 self.connection.write(f"{message}".encode('utf-8'))
                 return True

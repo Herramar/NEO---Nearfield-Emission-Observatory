@@ -101,17 +101,17 @@ class NEO_Controller:
     def measure(self, m, n, distance):
         print("\n[MEASUREMENT] Starting measurement...\n")
         phi_axis = 0
-        x = (m-1)//2
-        y = (n-1)//2
-        order_matrix = np.zeros((m, n))  # Store the order of measurements
-        position_matrix = np.zeros((m, n, 2))  # Store X, Y
-        measurement_matrix = np.zeros((m, n))  # Store measurements
+        x = int((m/distance)-1)//2
+        y = int((n/distance)-1)//2
+        order_matrix = np.zeros((int(m/distance), int(n/distance)))  # Store the order of measurements
+        position_matrix = np.zeros((int(m/distance), int(n/distance), 2))  # Store X, Y
+        measurement_matrix = np.zeros((int(m/distance), int(n/distance)))  # Store measurements
         count = 1
         steps = 1
         dirs = [(0,1),(1,0),(0,-1),(-1,0)]  # derecha, abajo, izquierda, arriba
         move = [self.move_right, self.move_down, self.move_left, self.move_up]  # derecha, abajo, izquierda, arriba
         dir_idx = 0
-        while count < m*n:
+        while count < (m/distance)*(n/distance):
             if count == 1:
                 order_matrix[x, y] = 0
                 measurement_matrix[x, y] = 1
@@ -119,7 +119,7 @@ class NEO_Controller:
                 position_matrix[x, y, 1] = float(self.Readout_XY.getPosition(1))
             for _ in range(2):
                 print(f"[MEASUREMENT] Current direction: {['Right', 'Down', 'Left', 'Up'][dir_idx % 4]}")
-                print(f"[MEASUREMENT] Total count: {count}/{m*n}\n")
+                print(f"[MEASUREMENT] Total count: {count}/{int((m/distance)*(n/distance))}\n")
                 dx, dy = dirs[dir_idx % 4]
                 move_func = move[dir_idx % 4]
                 for _ in range(steps):
@@ -132,9 +132,9 @@ class NEO_Controller:
                     position_matrix[x, y, 0] = float(self.Readout_XY.getPosition(0))
                     position_matrix[x, y, 1] = float(self.Readout_XY.getPosition(1))
                     measurement_matrix[x, y] = 1
-                    if 0 <= x < m and 0 <= y < n:
+                    if 0 <= x < m/distance and 0 <= y < n/distance:
                         count += 1
-                        if count >= m*n:
+                        if count >= (m/distance)*(n/distance):
                             print(f"[MEASUREMENT] Spiral traversal completed successfully.")
                             return order_matrix, position_matrix, measurement_matrix
                 dir_idx += 1

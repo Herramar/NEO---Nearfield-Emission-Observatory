@@ -3,9 +3,9 @@ import time
 import numpy as np
 
 Wait = 1
-Horizontal_Length = 5 #mm
-Vertical_Length = 5 #mm
-Step_Size = 1 #mm
+Horizontal_Length = 60 #mm
+Vertical_Length = 60 #mm
+Step_Size = 20 #mm
 
 if __name__ == "__main__":
 
@@ -27,9 +27,9 @@ if __name__ == "__main__":
 
     time.sleep(Wait)
 
-    order = np.zeros((Horizontal_Length, Vertical_Length, 2))  # Store the order of measurements for Phi=0 and Phi=90
-    positions = np.zeros((Horizontal_Length, Vertical_Length, 4))  # Store X, Z, positions for Phi=0 and Phi=90
-    measurements = np.zeros((Horizontal_Length, Vertical_Length, 2))  # Store measurements for Phi=0 and Phi=90
+    order = np.zeros((int(Horizontal_Length/Step_Size), int(Vertical_Length/Step_Size), 2))  # Store the order of measurements for Phi=0 and Phi=90
+    positions = np.zeros((int(Horizontal_Length/Step_Size), int(Vertical_Length/Step_Size), 4))  # Store X, Z, positions for Phi=0 and Phi=90
+    measurements = np.zeros((int(Horizontal_Length/Step_Size), int(Vertical_Length/Step_Size), 2))  # Store measurements for Phi=0 and Phi=90
 
     order[:,:,0], positions[:,:,0:2], measurements[:,:,0] = NEO.measure(Horizontal_Length, Vertical_Length, Step_Size)
 
