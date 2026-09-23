@@ -50,13 +50,28 @@ class NEO_Controller:
         print("\n[SYSTEM] Connecting...\n")
 
         # COM3 - VXC Motors
-        self.Motors = VXC_Controller(port=self.port_Motors, motorSpeed = self.motorSpeed, baudrate = self.baudrateVXC, timeout= self.timeout, echo=self.echo) 
+        self.Motors = VXC_Controller(
+            port=self.port_Motors, 
+            motorSpeed = self.motorSpeed, 
+            baudrate = self.baudrateVXC, 
+            timeout= self.timeout, echo=self.echo
+        ) # COM3
         
         # COM4 - Readout XY 
-        self.Readout_XY = VRO_Controller(port=self.port_Readout_XY, baudrate = self.baudrateVRO, timeout= self.timeout, echo=self.echo, type = 0) # COM4
+        self.Readout_XY = VRO_Controller(
+            port=self.port_Readout_XY, 
+            baudrate = self.baudrateVRO, 
+            timeout= self.timeout, 
+            echo=self.echo, type = 0
+        ) # COM4
         
         # COM5 - Readout Phi
-        self.Readout_Phi = VRO_Controller(port=self.port_Readout_Phi, baudrate = self.baudrateVRO, timeout= self.timeout, echo=self.echo, type = 1) # COM5
+        self.Readout_Phi = VRO_Controller(
+            port=self.port_Readout_Phi, 
+            baudrate = self.baudrateVRO, 
+            timeout= self.timeout, 
+            echo=self.echo, type = 1
+        ) # COM5
 
         # Ethernet - Vector network analyzer
         self.VNA = VNA_Controller(
